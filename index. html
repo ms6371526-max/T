@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة قراءات والتحصيل - مشروع مياه المقالح</title>
+    <!-- مكتبة html2pdf لتصدير الـ PDF بدقة -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #dbe4ee;
+            --header-bg: #c5d4e8;
+            --table-border: #99b2d0;
+            --primary-blue: #1d4ed8;
+            --row-alt: #f0f4f9;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            padding: 10px;
+            direction: rtl;
+            color: #333;
+        }
+
+        /* شاشة تسجيل الدخول */
+        #loginScreen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 90vh;
+        }
+
+        .login-box {
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 380px;
+            border: 2px solid #a3b8d0;
+        }
+
+        .login-title {
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #1a365d;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #cbd5e1;
+            padding-bottom: 10px;
+        }
+
+        /* لوحة التطبيق الأساسية */
+        #appScreen {
+            display: none;
+            max-width: 1250px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: linear-gradient(to bottom, #dbe4ee, #c0d1e5);
+            border-bottom: 2px solid #a3b8d0;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+
+        .app-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #1a365d;
+        }
+
+        /* شريط التبويبات (الصفحات) */
+        .nav-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #99b2d0;
+            padding-bottom: 5px;
+        }
+
+        .tab-btn {
+            background-color: #cbd9ea;
+            border: 1px solid #7f9db9;
+            padding: 8px 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            color: #1e3a8a;
+        }
+
+        .tab-btn.active {
+            background-color: #fff;
+            border-bottom: 2px solid #fff;
+            color: #2563eb;
+        }
+
+        .filter-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            background: #cbd9ea;
+            padding: 12px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--table-border);
+            margin-bottom: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .filter-group label {
+            font-size: 0.9rem;
+            color: #2b4c7e;
+            white-space: nowrap;
+            font-weight: bold;
+        }
+
+        .filter-group select, .filter-group input {
+            padding: 6px 8px;
+            border: 1px solid #7f9db9;
+            border-radius: 3px;
+            background: #fff;
+            font-size: 0.95rem;
+            width: 100%;
+            max-width: 140px;
+            text-align: center;
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .btn {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 0.9rem;
+        }
+
+        .btn:hover { background-color: #1d4ed8; }
+        .btn-success { background-color: #16a34a; }
+        .btn-success:hover { background-color: #15803d; }
+        .btn-pdf { background-color: #dc2626; }
+        .btn-pdf:hover { background-color: #b91c1c; }
+        .btn-excel { background-color: #047857; }
+        .btn-excel:hover { background-color: #065f46; }
+        .btn-amber { background-color: #d97706; }
+        .btn-amber:hover { background-color: #b45309; }
+        .btn-logout { background-color: #475569; }
+        .btn-logout:hover { background-color: #334155; }
+
+        .print-header {
+            text-align: center;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .print-header h2 { color: #1e3a8a; font-size: 1.4rem; margin-bottom: 5px; }
+        .print-header p { color: #475569; font-size: 1rem; }
+
+        .table-responsive {
+            overflow-x: auto;
+            background: #fff;
+            border: 1px solid var(--table-border);
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            background-color: #c5d4e8;
+            z-index: 10;
+        }
+
+        th {
+            border: 1px solid var(--table-border);
+            padding: 10px 6px;
+            color: #1e3a8a;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        td {
+            border: 1px solid #cbd5e1;
+            padding: 6px 4px;
+            vertical-align: middle;
+        }
+
+        tr:nth-child(even) { background-color: var(--row-alt); }
+        tr:hover { background-color: #e2e8f0; }
+
+        input.cell-input {
+            width: 100%;
+            border: 1px solid #a1a1aa;
+            border-radius: 2px;
+            padding: 4px;
+            text-align: center;
+            font-weight: bold;
+            background-color: #fffef0;
+        }
+
+        input.cell-input:focus { outline: 2px solid #2563eb; background-color: #fff; }
+
+        tfoot {
+            position: sticky;
+            bottom: 0;
+            background-color: #dbe4ee;
+            font-weight: bold;
+            z-index: 5;
+        }
+
+        tfoot td {
+            border-top: 2px solid var(--table-border);
+            padding: 10px 4px;
+            background-color: #dbe4ee;
+            color: #0f172a;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border: 2px solid #a3b8d0;
+        }
+        .modal-header {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #1e3a8a;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 8px;
+        }
+        .form-row {
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .form-row label { font-size: 0.9rem; font-weight: bold; color: #2b4c7e; }
+        .form-row input, .form-row select {
+            padding: 7px;
+            border: 1px solid #7f9db9;
+            border-radius: 3px;
+            font-size: 0.95rem;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        @media print {
+            body { background-color: #fff; padding: 0; }
+            #appScreen { box-shadow: none; padding: 0; max-width: 100%; }
+            .app-header, .filter-section, .action-bar, .nav-tabs { display: none !important; }
+            .print-header { display: block !important; }
+            .table-responsive { max-height: none !important; overflow: visible !important; border: none; }
+            input.cell-input { border: none; background: transparent; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- شاشة تسجيل الدخول -->
+    <div id="loginScreen">
+        <div class="login-box">
+            <div class="login-title">🔐 تسجيل الدخول للنظام</div>
+            <div class="form-row">
+                <label>اسم المستخدم:</label>
+                <input type="text" id="loginUser" placeholder="admin أو user">
+            </div>
+            <div class="form-row">
+                <label>كلمة المرور:</label>
+                <input type="password" id="loginPass" placeholder="كلمة المرور">
+            </div>
+            <div style="font-size: 0.8rem; color: #64748b; margin-top: 5px; margin-bottom: 15px;">
+                * مدير النظام: admin / 123<br>* المحاسب / المقارئ: user / 456
+            </div>
+            <button class="btn" style="width: 100%; justify-content: center;" onclick="handleLogin()">دخول للنظام</button>
+        </div>
+    </div>
+
+    <!-- لوحة التطبيق الأساسية -->
+    <div id="appScreen">
+        <div class="app-header">
+            <div class="app-title">
+                📊 <span id="headerTitle">إدارة قراءات المياه</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span id="userInfoDisplay" style="font-size: 0.9rem; color: #1e3a8a; font-weight: bold;"></span>
+                <button class="btn btn-logout" onclick="handleLogout()">تسجيل خروج</button>
+            </div>
+        </div>
+
+        <!-- التبويبات (الصفحات) -->
+        <div class="nav-tabs">
+            <button class="tab-btn active" id="tabReadings" onclick="switchTab('readings')">📁 صفحة القراءات</button>
+            <button class="tab-btn" id="tabCollection" onclick="switchTab('collection')">💰 صفحة التحصيل</button>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-group">
+                <select id="yearSelect" onchange="renderActiveTab()">
+                    <option value="2026" selected>2026</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                </select>
+                <label>السنة</label>
+            </div>
+            <div class="filter-group">
+                <select id="villageSelect" onchange="renderActiveTab()">
+                    <option value="المقالح" selected>المقالح</option>
+                    <option value="بيت الدكيني السفلى">بيت الدكيني السفلى</option>
+                    <option value="بيت الدكيني العليا">بيت الدكيني العليا</option>
+                    <option value="بيت الماس العليا">بيت الماس العليا</option>
+                    <option value="بيت الماس السفلى">بيت الماس السفلى</option>
+                    <option value="نمران">نمران</option>
+                    <option value="الجلوب">الجلوب</option>
+                    <option value="نمران العفه">نمران العفه</option>
+                    <option value="المذل">المذل</option>
+                    <option value="بيت البداء">بيت البداء</option>
+                </select>
+                <label>القرية</label>
+            </div>
+            <div class="filter-group">
+                <select id="monthSelect" onchange="renderActiveTab()">
+                    <option value="يناير">يناير</option>
+                    <option value="فبراير">فبراير</option>
+                    <option value="مارس">مارس</option>
+                    <option value="إبريل">إبريل</option>
+                    <option value="مايو">مايو</option>
+                    <option value="يونيو">يونيو</option>
+                    <option value="يوليو">يوليو</option>
+                    <option value="أغسطس">أغسطس</option>
+                    <option value="سبتمبر">سبتمبر</option>
+                    <option value="أكتوبر" selected>أكتوبر</option>
+                    <option value="نوفمبر">نوفمبر</option>
+                    <option value="ديسمبر">ديسمبر</option>
+                </select>
+                <label>شهر الاستهلاك</label>
+            </div>
+        </div>
+
+        <!-- أزرار الإجراءات الخاصة بصفحة القراءات -->
+        <div class="action-bar" id="readingsActionBar">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-success" onclick="openAddModal()">➕ إضافة مشترك جديد</button>
+                <button class="btn btn-amber" onclick="copyPreviousMonthReadings()" title="ترحيل القراءات الحالية والمتأخرات المتبقية من الشهر السابق">⚡ ترحيل قراءات الشهر السابق</button>
+                <button class="btn btn-pdf" onclick="generatePDF()">📄 تصدير PDF</button>
+                <button class="btn btn-excel" onclick="exportExcel('readings')">📊 تصدير إكسل</button>
+            </div>
+            <div style="font-size: 0.85rem; color: #475569;">
+                تعرفة: 300 (أو 700 للإنشاء) | ثابت: 400 (يستثنى الوقف)
+            </div>
+        </div>
+
+        <!-- أزرار الإجراءات الخاصة بصفحة التحصيل -->
+        <div class="action-bar" id="collectionActionBar" style="display: none;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-pdf" onclick="generatePDF()">📄 تصدير تحصيل PDF</button>
+                <button class="btn btn-excel" onclick="exportExcel('collection')">📊 تصدير تحصيل إكسل</button>
+            </div>
+            <div style="font-size: 0.85rem; color: #475569;">
+                سجل التحصيل والمبالغ المحصلة والمتبقي
+            </div>
+        </div>
+
+        <div id="printArea">
+            <div class="print-header" id="printHeader">
+                <h2>مشروع مياه المقالح والقرى المجاورة</h2>
+                <p id="printSubTitle">كشف قراءات المياه</p>
+                <hr style="margin: 10px 0; border: 1px solid #cbd5e1;">
+            </div>
+
+            <!-- جدول صفحة القراءات -->
+            <div class="table-responsive" id="readingsTableContainer">
+                <table id="dataTableReadings">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">م</th>
+                            <th style="width: 90px;">رقم المشترك</th>
+                            <th style="text-align: right; padding-right: 15px;">اسم المشترك</th>
+                            <th style="width: 120px;">نوع المشترك</th>
+                            <th style="width: 90px;">القراءة السابقة</th>
+                            <th style="width: 90px;">القراءة الحالية</th>
+                            <th style="width: 70px;">الفارق</th>
+                            <th style="width: 100px;">المتأخرات</th>
+                            <th style="width: 110px;">الإجمالي</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBodyReadings"></tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="6" style="text-align: right; padding-right: 15px;">الإجمـــــــــــالــــــــــي:</td>
+                            <td id="totDiff">0</td>
+                            <td id="totArrears">0</td>
+                            <td id="totGrand">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- جدول صفحة التحصيل -->
+            <div class="table-responsive" id="collectionTableContainer" style="display: none;">
+                <table id="dataTableCollection">
+                    <thead>
+                        <tr>
+                            <th style="width: 85px;">رقم الفاتوره</th>
+                            <th style="width: 95px;">رقم المشترك</th>
+                            <th style="text-align: right; padding-right: 15px;">اســــــــــــــــــــم المشترك</th>
+                            <th style="width: 110px;">الإجمالي</th>
+                            <th style="width: 110px;">المبلغ المحصل</th>
+                            <th style="width: 110px;">المتبقي</th>
+                            <th style="width: 130px;">الملاحظة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBodyCollection"></tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" style="text-align: right; padding-right: 15px;">الإجمـــــــــــالــــــــــي:</td>
+                            <td id="colTotGrand">0</td>
+                            <td id="colTotCollected">0</td>
+                            <td id="colTotRemaining">0</td>
+                            <td>-</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة مشترك جديد -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">إدخال مشترك جديد</div>
+            <div class="form-row">
+                <label>رقم المشترك:</label>
+                <input type="number" id="newId" value="20261302">
+            </div>
+            <div class="form-row">
+                <label>اسم المشترك:</label>
+                <input type="text" id="newName" placeholder="الاسم الرباعي">
+            </div>
+            <div class="form-row">
+                <label>القرية:</label>
+                <select id="newVillage">
+                    <option value="المقالح">المقالح</option>
+                    <option value="بيت الدكيني السفلى">بيت الدكيني السفلى</option>
+                    <option value="بيت الدكيني العليا">بيت الدكيني العليا</option>
+                    <option value="بيت الماس العليا">بيت الماس العليا</option>
+                    <option value="بيت الماس السفلى">بيت الماس السفلى</option>
+                    <option value="نمران">نمران</option>
+                    <option value="الجلوب">الجلوب</option>
+                    <option value="نمران العفه">نمران العفه</option>
+                    <option value="المذل">المذل</option>
+                    <option value="بيت البداء">بيت البداء</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label>نوع المشترك:</label>
+                <select id="newType">
+                    <option value="سكني">سكني</option>
+                    <option value="منفعة عامة / وقف">منفعة عامة / وقف</option>
+                    <option value="تحت الإنشاء">تحت الإنشاء</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" style="background-color: #64748b;" onclick="closeAddModal()">إلغاء</button>
+                <button class="btn btn-success" onclick="saveNewSubscriber()">حفظ</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const systemUsers = {
+        "admin": { pass: "123", name: "مدير النظام (Admin)", role: "admin" },
+        "user": { pass: "456", name: "محاسب / مقارئ", role: "user" }
+    };
+
+    const defaultSubscribers = [
+        { id: "20261231", name: "عبده صالح محمد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261232", name: "عبدالسلام محمد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261233", name: "عبدالرزاق محمد المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261234", name: "محمد محمد الفقيه", village: "المقالح", type: "سكني" },
+        { id: "20261235", name: "ادريس علي صالح الجوفي", village: "المقالح", type: "منفعة عامة / وقف" },
+        { id: "20261236", name: "يحيى لطف الله الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261237", name: "ريدان احمد علي جباري", village: "المقالح", type: "تحت الإنشاء" },
+        { id: "20261238", name: "بشير عبده مصلح الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261239", name: "رزق صالح مصلح الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261240", name: "يحيى صالح مساعد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261241", name: "محمد احمد امين المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261242", name: "ياسر علي مصلح الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261243", name: "مجيب حمود محمد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261244", name: "عبده مصلح محمد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261245", name: "علي علي محمد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261246", name: "علي صالح محمد مرشد", village: "المقالح", type: "سكني" },
+        { id: "20261247", name: "محمد محمد الحكيم", village: "المقالح", type: "سكني" },
+        { id: "20261248", name: "لطف محمد مصلح الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261249", name: "صلاح حمود صالح المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261250", name: "نبيل علي محمد صالح المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261251", name: "منير صالح مرشد المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261252", name: "محمد علي أحمد المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261253", name: "محمد سعد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261254", name: "عرفات محمد علي الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261255", name: "محمد ناجي أحمد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261256", name: "أحمد عبده ناجي الفقيه", village: "المقالح", type: "سكني" },
+        { id: "20261257", name: "علي مصلح أحمد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261258", name: "صالح مصلح محمد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261259", name: "أحمد محمد علي العماري", village: "المقالح", type: "سكني" },
+        { id: "20261260", name: "علي صالح مصلح ناجي", village: "المقالح", type: "سكني" },
+        { id: "20261261", name: "علي محمد ناجي العماري", village: "المقالح", type: "سكني" },
+        { id: "20261262", name: "إسماعيل محمد صالح المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261263", name: "محمد حزام صالح المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261264", name: "عبدالله صالح علي الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261265", name: "امين محمد علي الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261266", name: "الجامع الأسفل", village: "المقالح", type: "سكني" },
+        { id: "20261267", name: "صالح مصلح الحاج احمد المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261268", name: "ضياء لطف محمد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261269", name: "طاهر محمد حزام الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261270", name: "علي سعد صالح المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261271", name: "احمد الحاج محمد المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261272", name: "احمد عبدالله صالح المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261273", name: "صلاح محمد علي الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261274", name: "عبده صالح مصلح المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261275", name: "فتح محمد علي الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261276", name: "نبيل طاهر صالح مرشد", village: "المقالح", type: "سكني" },
+        { id: "20261277", name: "عبده علي محمد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261278", name: "عبدالله الحاج يحيي الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261279", name: "محمد محمد يحيى الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261280", name: "عبده محمد محمد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261281", name: "اكرم محمد محمد الحاج", village: "المقالح", type: "سكني" },
+        { id: "20261282", name: "مصلح محمد مصلح الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261283", name: "الجامع الاعلي", village: "المقالح", type: "سكني" },
+        { id: "20261284", name: "سلطان احمد محمد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261285", name: "حافظ عبدالله صالح المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261286", name: "عبده الحاج احمد علي المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261287", name: "وليد علي محمد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261288", name: "عمار عبده ناجي الفقيه", village: "المقالح", type: "سكني" },
+        { id: "20261289", name: "سامي احمد حزام الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261290", name: "محمد علي صالح المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261291", name: "محمد يحيى علي الفقيه", village: "المقالح", type: "سكني" },
+        { id: "20261292", name: "علي محمد صالح المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261293", name: "انس محمد احمد الجوفي", village: "المقالح", type: "سكني" },
+        { id: "20261294", name: "محمد ناجي محمد الفقية", village: "المقالح", type: "سكني" },
+        { id: "20261295", name: "عامر محمد طاهر المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261296", name: "محمد علي مسعد الشعري", village: "المقالح", type: "سكني" },
+        { id: "20261297", name: "سيف علي احمد رشد المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261298", name: "عرفات عبدالله صالح المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261299", name: "عمرو عبده ناجي الفقية", village: "المقالح", type: "سكني" },
+        { id: "20261300", name: "ماهرعبده محمد صالح المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261301", name: "نصرعلي محمد المقالح", village: "المقالح", type: "سكني" },
+        { id: "20261001", name: "عبده حزام علي الدمراوي", village: "بيت الماس السفلى", type: "سكني" }
+    ];
+
+    const initialOct2026Readings = {
+        "20261231": { prev: 276, curr: 276, arrears: 800, collected: 0, note: "" },
+        "20261232": { prev: 1985, curr: 1991, arrears: 0, collected: 0, note: "" },
+        "20261233": { prev: 522, curr: 555, arrears: 5300, collected: 0, note: "" },
+        "20261234": { prev: 910, curr: 922, arrears: 5200, collected: 0, note: "" },
+        "20261235": { prev: 724, curr: 743, arrears: 53700, collected: 0, note: "" },
+        "20261236": { prev: 179, curr: 183, arrears: 0, collected: 0, note: "" },
+        "20261237": { prev: 145, curr: 145, arrears: 0, collected: 0, note: "" },
+        "20261238": { prev: 762, curr: 767, arrears: 23900, collected: 0, note: "" },
+        "20261239": { prev: 457, curr: 467, arrears: 149400, collected: 0, note: "" },
+        "20261240": { prev: 80, curr: 84, arrears: 1300, collected: 0, note: "" },
+        "20261241": { prev: 268, curr: 282, arrears: 9300, collected: 0, note: "" },
+        "20261242": { prev: 538, curr: 542, arrears: 0, collected: 0, note: "" },
+        "20261243": { prev: 398, curr: 402, arrears: 0, collected: 0, note: "" },
+        "20261244": { prev: 104, curr: 110, arrears: 4500, collected: 0, note: "" },
+        "20261245": { prev: 138, curr: 144, arrears: 20000, collected: 0, note: "" },
+        "20261246": { prev: 103, curr: 105, arrears: 0, collected: 0, note: "" },
+        "20261247": { prev: 347, curr: 356, arrears: 35700, collected: 0, note: "" },
+        "20261248": { prev: 377, curr: 381, arrears: 0, collected: 0, note: "" },
+        "20261249": { prev: 57, curr: 57, arrears: 7700, collected: 0, note: "" },
+        "20261250": { prev: 691, curr: 700, arrears: 7900, collected: 0, note: "" },
+        "20261251": { prev: 130, curr: 137, arrears: 0, collected: 0, note: "" },
+        "20261252": { prev: 62, curr: 63, arrears: 400, collected: 0, note: "" },
+        "20261253": { prev: 256, curr: 261, arrears: 0, collected: 0, note: "" },
+        "20261254": { prev: 161, curr: 161, arrears: 400, collected: 0, note: "" },
+        "20261255": { prev: 379, curr: 386, arrears: 14100, collected: 0, note: "" },
+        "20261256": { prev: 97, curr: 103, arrears: 0, collected: 0, note: "" },
+        "20261257": { prev: 123, curr: 127, arrears: 0, collected: 0, note: "" },
+        "20261258": { prev: 392, curr: 392, arrears: 400, collected: 0, note: "" },
+        "20261259": { prev: 316, curr: 320, arrears: 100, collected: 0, note: "" },
+        "20261260": { prev: 153, curr: 157, arrears: 2600, collected: 0, note: "" },
+        "20261261": { prev: 48, curr: 50, arrears: 400, collected: 0, note: "" },
+        "20261262": { prev: 1166, curr: 1167, arrears: 121400, collected: 0, note: "" },
+        "20261263": { prev: 34, curr: 34, arrears: 12000, collected: 0, note: "" },
+        "20261264": { prev: 263, curr: 268, arrears: 0, collected: 0, note: "" },
+        "20261265": { prev: 152, curr: 152, arrears: 26400, collected: 0, note: "" },
+        "20261266": { prev: 202, curr: 202, arrears: 20400, collected: 0, note: "" },
+        "20261267": { prev: 184, curr: 184, arrears: 4000, collected: 0, note: "" },
+        "20261268": { prev: 282, curr: 282, arrears: 0, collected: 0, note: "" },
+        "20261269": { prev: 0, curr: 5, arrears: 0, collected: 0, note: "" },
+        "20261270": { prev: 82, curr: 82, arrears: 6600, collected: 0, note: "" },
+        "20261271": { prev: 24, curr: 26, arrears: 1600, collected: 0, note: "" },
+        "20261272": { prev: 16, curr: 16, arrears: 3600, collected: 0, note: "" },
+        "20261273": { prev: 47, curr: 47, arrears: 7700, collected: 0, note: "" },
+        "20261274": { prev: 564, curr: 564, arrears: 13200, collected: 0, note: "" },
+        "20261275": { prev: 84, curr: 87, arrears: 10300, collected: 0, note: "" },
+        "20261276": { prev: 83, curr: 83, arrears: 400, collected: 0, note: "" },
+        "20261277": { prev: 404, curr: 404, arrears: 37900, collected: 0, note: "" },
+        "20261278": { prev: 55, curr: 58, arrears: 900, collected: 0, note: "" },
+        "20261279": { prev: 16, curr: 16, arrears: 500, collected: 0, note: "" },
+        "20261280": { prev: 48, curr: 48, arrears: 0, collected: 0, note: "" },
+        "20261281": { prev: 29, curr: 33, arrears: 0, collected: 0, note: "" },
+        "20261282": { prev: 670, curr: 678, arrears: 0, collected: 0, note: "" },
+        "20261283": { prev: 22, curr: 22, arrears: 6600, collected: 0, note: "" },
+        "20261284": { prev: 307, curr: 324, arrears: 35300, collected: 0, note: "" },
+        "20261285": { prev: 49, curr: 52, arrears: 5600, collected: 0, note: "" },
+        "20261286": { prev: 24, curr: 24, arrears: 0, collected: 0, note: "" },
+        "20261287": { prev: 74, curr: 78, arrears: 2900, collected: 0, note: "" },
+        "20261288": { prev: 164, curr: 164, arrears: 0, collected: 0, note: "" },
+        "20261289": { prev: 200, curr: 203, arrears: 200, collected: 0, note: "" },
+        "20261290": { prev: 569, curr: 570, arrears: 0, collected: 0, note: "" },
+        "20261291": { prev: 139, curr: 145, arrears: 12400, collected: 0, note: "" },
+        "20261292": { prev: 81, curr: 81, arrears: 7800, collected: 0, note: "" },
+        "20261293": { prev: 77, curr: 79, arrears: 0, collected: 0, note: "" },
+        "20261294": { prev: 188, curr: 188, arrears: 0, collected: 0, note: "" },
+        "20261295": { prev: 23, curr: 24, arrears: 5500, collected: 0, note: "" },
+        "20261296": { prev: 79, curr: 79, arrears: 800, collected: 0, note: "" },
+        "20261297": { prev: 24, curr: 25, arrears: 4200, collected: 0, note: "" },
+        "20261298": { prev: 5, curr: 5, arrears: 0, collected: 0, note: "" },
+        "20261299": { prev: 44, curr: 44, arrears: 5100, collected: 0, note: "" },
+        "20261300": { prev: 58, curr: 61, arrears: 21400, collected: 0, note: "" },
+        "20261301": { prev: 38, curr: 53, arrears: 0, collected: 0, note: "" },
+        "20261001": { prev: 100, curr: 115, arrears: 1200, collected: 0, note: "" }
+    };
+
+    let subscribers = JSON.parse(localStorage.getItem('water_subscribers')) || defaultSubscribers;
+    let dbReadings = JSON.parse(localStorage.getItem('water_db_readings')) || {
+        "أكتوبر_2026": initialOct2026Readings
+    };
+
+    let activeTab = 'readings'; // 'readings' or 'collection'
+
+    function handleLogin() {
+        const u = document.getElementById('loginUser').value.trim();
+        const p = document.getElementById('loginPass').value.trim();
+
+        if (systemUsers[u] && systemUsers[u].pass === p) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appScreen').style.display = 'block';
+            document.getElementById('userInfoDisplay').innerText = `المستخدم: ${systemUsers[u].name}`;
+            renderActiveTab();
+        } else {
+            alert('اسم المستخدم أو كلمة المرور غير صحيحة!');
+        }
+    }
+
+    function handleLogout() {
+        document.getElementById('loginUser').value = '';
+        document.getElementById('loginPass').value = '';
+        document.getElementById('appScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+    }
+
+    function switchTab(tab) {
+        activeTab = tab;
+        document.getElementById('tabReadings').classList.remove('active');
+        document.getElementById('tabCollection').classList.remove('active');
+        
+        if (tab === 'readings') {
+            document.getElementById('tabReadings').classList.add('active');
+            document.getElementById('readingsActionBar').style.display = 'flex';
+            document.getElementById('collectionActionBar').style.display = 'none';
+            document.getElementById('readingsTableContainer').style.display = 'block';
+            document.getElementById('collectionTableContainer').style.display = 'none';
+            document.getElementById('headerTitle').innerText = 'إدارة قراءات المياه';
+        } else {
+            document.getElementById('tabCollection').classList.add('active');
+            document.getElementById('readingsActionBar').style.display = 'none';
+            document.getElementById('collectionActionBar').style.display = 'flex';
+            document.getElementById('readingsTableContainer').style.display = 'none';
+            document.getElementById('collectionTableContainer').style.display = 'block';
+            document.getElementById('headerTitle').innerText = 'شاشة التحصيل';
+        }
+        renderActiveTab();
+    }
+
+    function renderActiveTab() {
+        if (activeTab === 'readings') {
+            renderReadingsTable();
+        } else {
+            renderCollectionTable();
+        }
+    }
+
+    function getStorageKey(month, year) {
+        return month + "_" + year;
+    }
+
+    function getPreviousMonthAndYear(month, year) {
+        const months = ["يناير", "فبراير", "مارس", "إبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+        let idx = months.indexOf(month);
+        let prevMonth = "";
+        let prevYear = parseInt(year);
+
+        if (idx === 0) {
+            prevMonth = "ديسمبر";
+            prevYear -= 1;
+        } else {
+            prevMonth = months[idx - 1];
+        }
+        return { month: prevMonth, year: prevYear };
+    }
+
+    function copyPreviousMonthReadings() {
+        const curMonth = document.getElementById('monthSelect').value;
+        const curYear = document.getElementById('yearSelect').value;
+        const village = document.getElementById('villageSelect').value;
+
+        const prevInfo = getPreviousMonthAndYear(curMonth, curYear);
+        const prevKey = getStorageKey(prevInfo.month, prevInfo.year);
+        const curKey = getStorageKey(curMonth, curYear);
+
+        if (!dbReadings[prevKey]) {
+            alert(`عفواً، لا توجد قراءات مسجلة للشهر السابق (${prevInfo.month} ${prevInfo.year}) لترحيلها.`);
+            return;
+        }
+
+        if (!dbReadings[curKey]) {
+            dbReadings[curKey] = {};
+        }
+
+        const filteredSubs = subscribers.filter(s => s.village === village);
+        let count = 0;
+
+        filteredSubs.forEach(sub => {
+            const prevData = dbReadings[prevKey][sub.id];
+            if (prevData) {
+                if (!dbReadings[curKey][sub.id]) {
+                    dbReadings[curKey][sub.id] = { prev: 0, curr: 0, arrears: 0, collected: 0, note: "" };
+                }
+                // نسخ القراءة الحالية للشهر السابق لتصبح القراءة السابقة
+                dbReadings[curKey][sub.id].prev = prevData.curr;
+                if (!dbReadings[curKey][sub.id].curr || dbReadings[curKey][sub.id].curr < prevData.curr) {
+                    dbReadings[curKey][sub.id].curr = prevData.curr;
+                }
+                // حساب المتبقي من الشهر السابق وترحيله كمتأخرات (المتأخرات السابقة + الإجمالي - المحصل)
+                const prevDiff = Math.max(0, prevData.curr - prevData.prev);
+                let prevFixed = (sub.type === "منفعة عامة / وقف") ? 0 : 400;
+                let prevPrice = (sub.type === "تحت الإنشاء") ? 700 : 300;
+                let prevTotal = (prevDiff * prevPrice) + prevFixed + (prevData.arrears || 0);
+                let prevRemaining = prevTotal - (prevData.collected || 0);
+
+                dbReadings[curKey][sub.id].arrears = Math.max(0, prevRemaining);
+                count++;
+            }
+        });
+
+        localStorage.setItem('water_db_readings', JSON.stringify(dbReadings));
+        renderActiveTab();
+        alert(`تم ترحيل قراءات ومتأخرات ${count} مشترك بنجاح من شهر ${prevInfo.month} إلى ${curMonth} ${curYear}!`);
+    }
+
+    function calculateTotal(diff, type, arrears) {
+        if (type === "منفعة عامة / وقف") {
+            return (diff * 300) + arrears;
+        } else if (type === "تحت الإنشاء") {
+            return (diff * 700) + 400 + arrears;
+        } else {
+            return (diff * 300) + 400 + arrears; // سكني
+        }
+    }
+
+    function renderReadingsTable() {
+        const village = document.getElementById('villageSelect').value;
+        const month = document.getElementById('monthSelect').value;
+        const year = document.getElementById('yearSelect').value;
+        const key = getStorageKey(month, year);
+
+        if (!dbReadings[key]) dbReadings[key] = {};
+
+        const tbody = document.getElementById('tableBodyReadings');
+        tbody.innerHTML = '';
+
+        const filteredSubs = subscribers.filter(s => s.village === village);
+
+        let totDiff = 0;
+        let totArrears = 0;
+        let totGrand = 0;
+
+        filteredSubs.forEach((sub, index) => {
+            if (!dbReadings[key][sub.id]) {
+                dbReadings[key][sub.id] = { prev: 0, curr: 0, arrears: 0, collected: 0, note: "" };
+            }
+            const rData = dbReadings[key][sub.id];
+            const diff = Math.max(0, rData.curr - rData.prev);
+            const total = calculateTotal(diff, sub.type, rData.arrears);
+
+            totDiff += diff;
+            totArrears += rData.arrears;
+            totGrand += total;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${sub.id}</td>
+                <td style="text-align: right; padding-right: 15px; font-weight: 500;">${sub.name}</td>
+                <td>
+                    <select onchange="updateSubType('${sub.id}', this.value)" style="border: 1px solid #7f9db9; padding: 2px; background: #fff; font-size: 0.85rem;">
+                        <option value="سكني" ${sub.type === 'سكني' ? 'selected' : ''}>سكني</option>
+                        <option value="منفعة عامة / وقف" ${sub.type === 'منفعة عامة / وقف' ? 'selected' : ''}>وقف / منفعة</option>
+                        <option value="تحت الإنشاء" ${sub.type === 'تحت الإنشاء' ? 'selected' : ''}>تحت الإنشاء</option>
+                    </select>
+                </td>
+                <td><input type="number" class="cell-input" value="${rData.prev}" onchange="updateReadingData('${sub.id}', 'prev', this.value)"></td>
+                <td><input type="number" class="cell-input" value="${rData.curr}" onchange="updateReadingData('${sub.id}', 'curr', this.value)"></td>
+                <td><strong style="color: ${diff > 0 ? '#16a34a' : '#475569'};">${diff.toLocaleString()}</strong></td>
+                <td><input type="number" class="cell-input" value="${rData.arrears}" onchange="updateReadingData('${sub.id}', 'arrears', this.value)"></td>
+                <td><strong style="color: #1e40af;">${total.toLocaleString()}</strong></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('totDiff').innerText = totDiff.toLocaleString();
+        document.getElementById('totArrears').innerText = totArrears.toLocaleString();
+        document.getElementById('totGrand').innerText = totGrand.toLocaleString();
+    }
+
+    function renderCollectionTable() {
+        const village = document.getElementById('villageSelect').value;
+        const month = document.getElementById('monthSelect').value;
+        const year = document.getElementById('yearSelect').value;
+        const key = getStorageKey(month, year);
+
+        if (!dbReadings[key]) dbReadings[key] = {};
+
+        const tbody = document.getElementById('tableBodyCollection');
+        tbody.innerHTML = '';
+
+        const filteredSubs = subscribers.filter(s => s.village === village);
+
+        let totGrand = 0;
+        let totCollected = 0;
+        let totRemaining = 0;
+
+        filteredSubs.forEach((sub, index) => {
+            if (!dbReadings[key][sub.id]) {
+                dbReadings[key][sub.id] = { prev: 0, curr: 0, arrears: 0, collected: 0, note: "" };
+            }
+            const rData = dbReadings[key][sub.id];
+            const diff = Math.max(0, rData.curr - rData.prev);
+            const total = calculateTotal(diff, sub.type, rData.arrears);
+            const collected = rData.collected || 0;
+            const remaining = total - collected;
+
+            totGrand += total;
+            totCollected += collected;
+            totRemaining += remaining;
+
+            const invoiceNo = 800 + index + 1;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${invoiceNo}</td>
+                <td>${sub.id}</td>
+                <td style="text-align: right; padding-right: 15px; font-weight: 500;">${sub.name}</td>
+                <td><strong style="color: #1e40af;">${total.toLocaleString()}</strong></td>
+                <td><input type="number" class="cell-input" value="${collected}" onchange="updateCollectionData('${sub.id}', 'collected', this.value)"></td>
+                <td><strong style="color: ${remaining > 0 ? '#dc2626' : '#16a34a'};">${remaining.toLocaleString()}</strong></td>
+                <td><input type="text" class="cell-input" value="${rData.note || ''}" onchange="updateCollectionData('${sub.id}', 'note', this.value)" style="background:#fff;"></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('colTotGrand').innerText = totGrand.toLocaleString();
+        document.getElementById('colTotCollected').innerText = totCollected.toLocaleString();
+        document.getElementById('colTotRemaining').innerText = totRemaining.toLocaleString();
+    }
+
+    function updateReadingData(id, field, val) {
+        const month = document.getElementById('monthSelect').value;
+        const year = document.getElementById('yearSelect').value;
+        const key = getStorageKey(month, year);
+
+        if (!dbReadings[key][id]) dbReadings[key][id] = { prev: 0, curr: 0, arrears: 0, collected: 0, note: "" };
+        dbReadings[key][id][field] = (field === 'note') ? val : (parseInt(val) || 0);
+
+        localStorage.setItem('water_db_readings', JSON.stringify(dbReadings));
+        renderActiveTab();
+    }
+
+    function updateCollectionData(id, field, val) {
+        const month = document.getElementById('monthSelect').value;
+        const year = document.getElementById('yearSelect').value;
+        const key = getStorageKey(month, year);
+
+        if (!dbReadings[key][id]) dbReadings[key][id] = { prev: 0, curr: 0, arrears: 0, collected: 0, note: "" };
+        dbReadings[key][id][field] = (field === 'note') ? val : (parseInt(val) || 0);
+
+        localStorage.setItem('water_db_readings', JSON.stringify(dbReadings));
+        renderCollectionTable();
+    }
+
+    function updateSubType(id, val) {
+        const sub = subscribers.find(s => s.id === id);
+        if (sub) {
+            sub.type = val;
+            localStorage.setItem('water_subscribers', JSON.stringify(subscribers));
+            renderActiveTab();
+        }
+    }
+
+    function openAddModal() {
+        document.getElementById('addModal').style.display = 'flex';
+        document.getElementById('newVillage').value = document.getElementById('villageSelect').value;
+    }
+
+    function closeAddModal() {
+        document.getElementById('addModal').style.display = 'none';
+    }
+
+    function saveNewSubscriber() {
+        const id = document.getElementById('newId').value;
+        const name = document.getElementById('newName').value;
+        const village = document.getElementById('newVillage').value;
+        const type = document.getElementById('newType').value;
+
+        if (!id || !name) {
+            alert('الرجاء إدخال رقم المشترك واسمه بشكل صحيح.');
+            return;
+        }
+
+        if (subscribers.some(s => s.id === id)) {
+            alert('رقم المشترك موجود مسبقاً!');
+            return;
+        }
+
+        subscribers.push({ id, name, village, type });
+        localStorage.setItem('water_subscribers', JSON.stringify(subscribers));
+
+        closeAddModal();
+        document.getElementById('villageSelect').value = village;
+        renderActiveTab();
+        alert('تمت إضافة المشترك بنجاح في قاعدة البيانات.');
+    }
+
+    function generatePDF() {
+        const month = document.getElementById('monthSelect').value;
+        const year = document.getElementById('yearSelect').value;
+        const village = document.getElementById('villageSelect').value;
+        const titleType = (activeTab === 'readings') ? 'كشف قراءات المياه' : 'كشف التحصيل';
+        
+        document.getElementById('printSubTitle').innerText = `${titleType} لشهر ${month} ${year} - قرية ${village}`;
+        document.getElementById('printHeader').style.display = 'block';
+
+        const element = document.getElementById('printArea');
+        const opt = {
+            margin:       10,
+            filename:     `${titleType}_${village}_${month}_${year}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+
+        html2pdf().from(element).set(opt).save().then(() => {
+            document.getElementById('printHeader').style.display = 'none';
+        });
+    }
+
+    function exportExcel(type) {
+        const village = document.getElementById('villageSelect').value;
+        const month = document.getElementById('monthSelect').value;
+        const year = document.getElementById('yearSelect').value;
+        const key = getStorageKey(month, year);
+        const filteredSubs = subscribers.filter(s => s.village === village);
+
+        let csvContent = "\uFEFF"; // لدعم العربية في أكسفورد / إكسل
+        if (type === 'readings') {
+            csvContent += "م,رقم المشترك,اسم المشترك,نوع المشترك,القراءة السابقة,القراءة الحالية,الفارق,المتأخرات,الإجمالي\n";
+            filteredSubs.forEach((sub, i) => {
+                const rData = dbReadings[key]?.[sub.id] || { prev: 0, curr: 0, arrears: 0 };
+                const diff = Math.max(0, rData.curr - rData.prev);
+                const total = calculateTotal(diff, sub.type, rData.arrears);
+                csvContent += `${i+1},${sub.id},"${sub.name}",${sub.type},${rData.prev},${rData.curr},${diff},${rData.arrears},${total}\n`;
+            });
+        } else {
+            csvContent += "رقم الفاتوره,رقم المشترك,اسم المشترك,الإجمالي,المبلغ المحصل,المتبقي,الملاحظة\n";
+            filteredSubs.forEach((sub, i) => {
+                const rData = dbReadings[key]?.[sub.id] || { prev: 0, curr: 0, arrears: 0, collected: 0, note: "" };
+                const diff = Math.max(0, rData.curr - rData.prev);
+                const total = calculateTotal(diff, sub.type, rData.arrears);
+                const collected = rData.collected || 0;
+                const remaining = total - collected;
+                const invNo = 800 + i + 1;
+                csvContent += `${invNo},${sub.id},"${sub.name}",${total},${collected},${remaining},"${rData.note || ''}"\n`;
+            });
+        }
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${type === 'readings' ? 'كشف_قراءات' : 'كشف_تحصيل'}_${village}_${month}_${year}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+</script>
+</body>
+</html>
